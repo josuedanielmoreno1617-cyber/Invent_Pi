@@ -1,0 +1,6 @@
+{
+  "name": "Inventario",
+  "description": "Una aplicación de inventario para gestionar productos, con cálculos automáticos de ganancias y pérdidas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
