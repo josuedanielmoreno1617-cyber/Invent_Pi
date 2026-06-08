@@ -16,5 +16,6 @@ data class Product(
     val buyPrice: Double,
     val sellPrice: Double,
     val dateJoined: Long,
-    val location: String
+    val location: String,
+    val category: String = ""
 )

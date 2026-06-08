@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Ciudad 3D Voxel</title>
+    <!-- Google Fonts para tipografía moderna -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome para iconos de interfaz -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #64b5f6;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* --- INTERFAZ DE USUARIO (GLASSMORPHISM) --- */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .ui-interactive {
+            pointer-events: auto;
+        }
+
+        /* Barra Superior */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            gap: 15px;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(14px) saturate(180%);
+            -webkit-backdrop-filter: blur(14px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 20px;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+            color: #1a1a2e;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: transform 0.2s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .glass-card i {
+            font-size: 1.2rem;
+        }
+
+        .glass-card.level { background: rgba(255, 255, 255, 0.5); }
+        .glass-card.money { color: #1b5e20; }
+        .glass-card.energy { color: #e65100; }
+        .glass-card.water { color: #0d47a1; }
+
+        .value {
+            font-weight: 800;
+            margin-left: 4px;
+        }
+
+        /* Menú Inferior */
+        .bottom-nav {
+            background: rgba(18, 18, 24, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 12px;
+            display: flex;
+            gap: 10px;
+            margin: 0 auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            justify-content: space-around;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            padding: 12px;
+            border-radius: 16px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+
+        .nav-btn i {
+            font-size: 1.4rem;
+        }
+
+        .nav-btn:hover {
+            color: #4fc3f7;
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-3px);
+        }
+
+        .nav-btn.active {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Controles de cámara de ayuda (Flotante) */
+        .camera-hint {
+            position: absolute;
+            right: 20px;
+            top: 100px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .top-bar {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .glass-card {
+                padding: 8px 16px;
+                font-size: 0.8rem;
+            }
+            .bottom-nav {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Capa de la Interfaz del Usuario (Glassmorphism) -->
+    <div class="ui-layer">
+        <div class="top-bar ui-interactive">
+            <div class="glass-card level">
+                <i class="fa-solid fa-ranking-star"></i>
+                Nivel <span class="value">42</span>
+            </div>
+            <div class="glass-card money">
+                <i class="fa-solid fa-wallet"></i>
+                <span class="value">$1,245,800</span>
+            </div>
+            <div class="glass-card energy">
+                <i class="fa-solid fa-bolt"></i>
+                Energía <span class="value">94%</span>
+            </div>
+            <div class="glass-card water">
+                <i class="fa-solid fa-droplet"></i>
+                Agua <span class="value">88%</span>
+            </div>
+        </div>
+
+        <div class="camera-hint">
+            <i class="fa-solid fa-computer-mouse"></i> Usa el mouse para arrastrar y rotar la ciudad
+        </div>
+
+        <div class="bottom-nav ui-interactive">
+            <button class="nav-btn active">
+                <i class="fa-solid fa-building"></i>
+                <span>Zonificar</span>
+            </button>
+            <button class="nav-btn">
+                <i class="fa-solid fa-road"></i>
+                <span>Vías</span>
+            </button>
+            <button class="nav-btn">
+                <i class="fa-solid fa-plug"></i>
+                <span>Servicios</span>
+            </button>
+            <button class="nav-btn">
+                <i class="fa-solid fa-tree"></i>
+                <span>Parques</span>
+            </button>
+            <button class="nav-btn">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Análisis</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Contenedor del Canvas de Renderizado 3D -->
+    <div id="canvas-container"></div>
+
+    <!-- Scripts de Three.js y OrbitControls para control de cámara -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- CONFIGURACIÓN PRINCIPAL DE LA ESCENA ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        
+        // Color de fondo: Azul cielo brillante y limpio
+        scene.background = new THREE.Color(0x4fc3f7);
+        scene.fog = new THREE.FogExp2(0x4fc3f7, 0.007);
+
+        // Cámara en perspectiva (frontal y ligeramente elevada)
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 35, 100);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // Controles de cámara orbitales limitados para preservar la perspectiva urbana
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 - 0.05; // Evita que la cámara traspase el suelo
+        controls.minDistance = 20;
+        controls.maxDistance = 180;
+        controls.target.set(0, 5, 0);
+
+        // --- ILUMINACIÓN DEL ENTORNO ---
+        // Luz ambiental suave para tonos generales
+        const ambientLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+        scene.add(ambientLight);
+
+        // Sol brillante que proyecta sombras nítidas estilo voxel
+        const sunLight = new THREE.DirectionalLight(0xfff9c4, 1.2);
+        sunLight.position.set(80, 100, 50);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 250;
+        const d = 100;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        scene.add(sunLight);
+
+        // --- ARREGLOS DE ANIMACIÓN ---
+        const animatedElements = {
+            cars: [],
+            pedestrians: [],
+            clouds: []
+        };
+
+        // --- CREACIÓN DEL ENTORNO DE LA CIUDAD ---
+
+        // El Sol Voxel (Geométrico) en el cielo
+        const sunGeometry = new THREE.BoxGeometry(16, 16, 16);
+        const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffeb3b });
+        const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
+        sunMesh.position.set(120, 90, -80);
+        scene.add(sunMesh);
+
+        // Nubes Voxel (Estructuras de bloques blancos flotantes)
+        function createCloud(x, y, z) {
+            const cloudGroup = new THREE.Group();
+            const cloudMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true });
+            
+            // Composición de bloques para la nube
+            const sizes = [
+                { w: 12, h: 4, d: 8, x: 0, y: 0, z: 0 },
+                { w: 8, h: 3, d: 6, x: -6, y: -0.5, z: 1 },
+                { w: 6, h: 3, d: 6, x: 6, y: -0.5, z: -1 }
+            ];
+
+            sizes.forEach(s => {
+                const partGeom = new THREE.BoxGeometry(s.w, s.h, s.d);
+                const partMesh = new THREE.Mesh(partGeom, cloudMaterial);
+                partMesh.position.set(s.x, s.y, s.z);
+                cloudGroup.add(partMesh);
+            });
+
+            cloudGroup.position.set(x, y, z);
+            scene.add(cloudGroup);
+            animatedElements.clouds.push(cloudGroup);
+        }
+
+        for (let i = 0; i < 6; i++) {
+            createCloud(-150 + Math.random() * 300, 60 + Math.random() * 20, -150 + Math.random() * 250);
+        }
+
+        // Suelo Base: Zona urbana gris oscuro para el asfalto de las avenidas principales
+        const asphaltMaterial = new THREE.MeshStandardMaterial({ color: 0x212121, roughness: 0.8 });
+        const baseRoadGeo = new THREE.PlaneGeometry(300, 300);
+        const baseRoad = new THREE.Mesh(baseRoadGeo, asphaltMaterial);
+        baseRoad.rotation.x = -Math.PI / 2;
+        baseRoad.receiveShadow = true;
+        scene.add(baseRoad);
+
+        // Carreteras principales cruzadas
+        // Central Lane Paint Marks (Líneas blancas pintadas y pasos de peatones)
+        function createRoadMarkings() {
+            const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            
+            // Línea discontinua central vertical
+            for (let z = -150; z < 150; z += 15) {
+                if (Math.abs(z) > 15) { // No pintar en la intersección central
+                    const dashGeo = new THREE.BoxGeometry(0.4, 0.05, 6);
+                    const dash = new THREE.Mesh(dashGeo, lineMat);
+                    dash.position.set(0, 0.06, z);
+                    scene.add(dash);
+                }
+            }
+
+            // Línea discontinua central horizontal
+            for (let x = -150; x < 150; x += 15) {
+                if (Math.abs(x) > 15) {
+                    const dashGeo = new THREE.BoxGeometry(6, 0.05, 0.4);
+                    const dash = new THREE.Mesh(dashGeo, lineMat);
+                    dash.position.set(x, 0.06, 0);
+                    scene.add(dash);
+                }
+            }
+
+            // Pasos de peatones en la intersección central
+            const crosswalkPositions = [
+                { x: 0, z: 14, rot: 0 },
+                { x: 0, z: -14, rot: 0 },
+                { x: 14, z: 0, rot: Math.PI / 2 },
+                { x: -14, z: 0, rot: Math.PI / 2 }
+            ];
+
+            crosswalkPositions.forEach(cp => {
+                const group = new THREE.Group();
+                for (let i = -6; i <= 6; i += 2) {
+                    const stripeGeo = new THREE.BoxGeometry(0.8, 0.05, 4);
+                    const stripe = new THREE.Mesh(stripeGeo, lineMat);
+                    stripe.position.set(i, 0.05, 0);
+                    group.add(stripe);
+                }
+                group.position.set(cp.x, 0, cp.z);
+                group.rotation.y = cp.rot;
+                scene.add(group);
+            });
+        }
+        createRoadMarkings();
+
+        // Aceras (Gris claro hechas de bloques estructurales elevados)
+        const sidewalkMaterial = new THREE.MeshStandardMaterial({ color: 0x90a4ae, roughness: 0.9 });
+        
+        function createSidewalkBlocks() {
+            // Cuadrantes donde se asientan las manzanas y rascacielos
+            // Cada manzana es un bloque elevado del suelo de asfalto
+            const blockPositions = [
+                { x: 80, z: 80, w: 140, d: 140 },  // Sureste
+                { x: -80, z: 80, w: 140, d: 140 }, // Suroeste
+                { x: 80, z: -80, w: 140, d: 140 }, // Noreste
+                { x: -80, z: -80, w: 140, d: 140 } // Noroeste
+            ];
+
+            blockPositions.forEach(bp => {
+                const blockGeo = new THREE.BoxGeometry(bp.w, 0.8, bp.d);
+                const blockMesh = new THREE.Mesh(blockGeo, sidewalkMaterial);
+                blockMesh.position.set(bp.x, 0.4, bp.z);
+                blockMesh.receiveShadow = true;
+                scene.add(blockMesh);
+            });
+        }
+        createSidewalkBlocks();
+
+
+        // --- RASCACIELOS MODERNOS Y VOLUMÉTRICOS (CRISTAL AZUL, GRIS Y BLANCO) ---
+        const glassBlueMaterial = new THREE.MeshStandardMaterial({ color: 0x0288d1, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.9 });
+        const concreteWhiteMaterial = new THREE.MeshStandardMaterial({ color: 0xeceff1, roughness: 0.5, metalness: 0.1 });
+        const metallicGreyMaterial = new THREE.MeshStandardMaterial({ color: 0x455a64, roughness: 0.3, metalness: 0.7 });
+        const yellowLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffeb3b });
+
+        function buildSkyscraper(baseX, baseZ, height, width, depth, styleType) {
+            const buildingGroup = new THREE.Group();
+            let mainMaterial;
+
+            if (styleType === 'glass') mainMaterial = glassBlueMaterial;
+            else if (styleType === 'white') mainMaterial = concreteWhiteMaterial;
+            else mainMaterial = metallicGreyMaterial;
+
+            // Cuerpo del edificio
+            const coreGeo = new THREE.BoxGeometry(width, height, depth);
+            const coreMesh = new THREE.Mesh(coreGeo, mainMaterial);
+            coreMesh.position.y = height / 2;
+            coreMesh.castShadow = true;
+            coreMesh.receiveShadow = true;
+            buildingGroup.add(coreMesh);
+
+            // Detalles Estructurales (Estilo voxel modular)
+            // Columnas y cornisas blancas/grises de soporte
+            if (styleType === 'glass') {
+                const frameMaterial = concreteWhiteMaterial;
+                // Base
+                const footingGeo = new THREE.BoxGeometry(width + 0.8, 3, depth + 0.8);
+                const footing = new THREE.Mesh(footingGeo, frameMaterial);
+                footing.position.y = 1.5;
+                buildingGroup.add(footing);
+
+                // Columnas de esquina exteriores
+                const colGeo = new THREE.BoxGeometry(1, height, 1);
+                const offsets = [
+                    { x: -width/2, z: -depth/2 },
+                    { x: width/2, z: -depth/2 },
+                    { x: -width/2, z: depth/2 },
+                    { x: width/2, z: depth/2 }
+                ];
+                offsets.forEach(offset => {
+                    const col = new THREE.Mesh(colGeo, frameMaterial);
+                    col.position.set(offset.x, height / 2, offset.z);
+                    buildingGroup.add(col);
+                });
+
+                // Corona en la parte superior
+                const crownGeo = new THREE.BoxGeometry(width + 1, 2, depth + 1);
+                const crown = new THREE.Mesh(crownGeo, frameMaterial);
+                crown.position.y = height + 1;
+                buildingGroup.add(crown);
+            } else {
+                // Agregar ventanas iluminadas o simuladas de vidrio a edificios opacos
+                const winRows = Math.floor(height / 4) - 2;
+                const winCols = Math.floor(width / 4);
+                
+                for (let r = 0; r < winRows; r++) {
+                    for (let c = 0; c < winCols; c++) {
+                        // Ventanas en cara frontal
+                        if (Math.random() > 0.3) {
+                            const winGeo = new THREE.BoxGeometry(1.5, 1.5, 0.2);
+                            const winMesh = new THREE.Mesh(winGeo, Math.random() > 0.15 ? glassBlueMaterial : yellowLightMaterial);
+                            
+                            const xPos = -width / 2 + 2 + c * 3.5;
+                            const yPos = 4 + r * 4;
+                            
+                            winMesh.position.set(xPos, yPos, depth/2 + 0.1);
+                            buildingGroup.add(winMesh);
+                        }
+                    }
+                }
+            }
+
+            buildingGroup.position.set(baseX, 0.8, baseZ); // Apoyados sobre la acera
+            scene.add(buildingGroup);
+        }
+
+        // Generar grilla de rascacielos altos
+        const skyscraperPositions = [
+            // Manzana Suroeste (Frente Izquierda)
+            { x: -25, z: 25, h: 45, w: 16, d: 16, style: 'glass' },
+            { x: -45, z: 25, h: 55, w: 18, d: 18, style: 'white' },
+            { x: -25, z: 50, h: 65, w: 16, d: 16, style: 'grey' },
+            { x: -55, z: 55, h: 35, w: 16, d: 16, style: 'glass' },
+            { x: -35, z: 85, h: 70, w: 20, d: 20, style: 'glass' },
+            
+            // Manzana Sureste (Frente Derecha)
+            { x: 25, z: 25, h: 50, w: 18, d: 18, style: 'white' },
+            { x: 50, z: 25, h: 40, w: 16, d: 16, style: 'glass' },
+            { x: 25, z: 55, h: 75, w: 16, d: 16, style: 'glass' },
+            { x: 55, z: 55, h: 55, w: 18, d: 18, style: 'grey' },
+            { x: 35, z: 85, h: 60, w: 20, d: 20, style: 'white' },
+
+            // Manzana Noroeste (Fondo Izquierda)
+            { x: -25, z: -25, h: 70, w: 18, d: 18, style: 'glass' },
+            { x: -50, z: -25, h: 45, w: 16, d: 16, style: 'grey' },
+            { x: -25, z: -55, h: 80, w: 20, d: 20, style: 'white' },
+            { x: -55, z: -55, h: 50, w: 16, d: 16, style: 'glass' },
+
+            // Manzana Noreste (Fondo Derecha)
+            { x: 25, z: -25, h: 60, w: 16, d: 16, style: 'grey' },
+            { x: 50, z: -25, h: 85, w: 20, d: 20, style: 'glass' },
+            { x: 25, z: -55, h: 45, w: 16, d: 16, style: 'white' },
+            { x: 55, z: -55, h: 65, w: 18, d: 18, style: 'glass' },
+        ];
+
+        skyscraperPositions.forEach(b => {
+            buildSkyscraper(b.x, b.z, b.h, b.w, b.d, b.style);
+        });
+
+
+        // --- ÁRBOLES EN ZONAS VERDES (ESTILO VOXEL 3D) ---
+        function createVoxelTree(x, z) {
+            const treeGroup = new THREE.Group();
+            
+            // Tronco (Marrón)
+            const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+            const trunkGeo = new THREE.BoxGeometry(1.2, 5, 1.2);
+            const trunk = new THREE.Mesh(trunkGeo, trunkMaterial);
+            trunk.position.y = 2.5;
+            trunk.castShadow = true;
+            treeGroup.add(trunk);
+
+            // Hojas (Copa de árbol geométrica verde brillante)
+            const foliageMaterial = new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.6 });
+            
+            // Cubos apilados
+            const leaves1Geo = new THREE.BoxGeometry(4, 3, 4);
+            const leaves1 = new THREE.Mesh(leaves1Geo, foliageMaterial);
+            leaves1.position.y = 5.5;
+            leaves1.castShadow = true;
+            treeGroup.add(leaves1);
+
+            const leaves2Geo = new THREE.BoxGeometry(2.5, 2, 2.5);
+            const leaves2 = new THREE.Mesh(leaves2Geo, foliageMaterial);
+            leaves2.position.y = 7.5;
+            leaves2.castShadow = true;
+            treeGroup.add(leaves2);
+
+            treeGroup.position.set(x, 0.8, z);
+            scene.add(treeGroup);
+        }
+
+        // Distribución de árboles junto a las aceras
+        const treeLocations = [
+            { x: -13, z: 15 }, { x: -13, z: 35 }, { x: -13, z: 70 },
+            { x: 13, z: 15 }, { x: 13, z: 35 }, { x: 13, z: 70 },
+            { x: -15, z: -13 }, { x: -35, z: -13 }, { x: -70, z: -13 },
+            { x: 15, z: -13 }, { x: 35, z: -13 }, { x: 70, z: -13 },
+        ];
+        treeLocations.forEach(tl => createVoxelTree(tl.x, tl.z));
+
+
+        // --- DETALLES DE MOBILIARIO URBANO (SEMÁFOROS Y FAROLAS) ---
+        function createStreetLight(x, z, rotY) {
+            const group = new THREE.Group();
+            const metalMat = new THREE.MeshStandardMaterial({ color: 0x37474f, metalness: 0.8 });
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0xfff9c4 }); // Luz amarilla cálida
+
+            // Poste vertical
+            const postGeo = new THREE.BoxGeometry(0.3, 7, 0.3);
+            const post = new THREE.Mesh(postGeo, metalMat);
+            post.position.y = 3.5;
+            group.add(post);
+
+            // Brazo horizontal
+            const armGeo = new THREE.BoxGeometry(2, 0.3, 0.3);
+            const arm = new THREE.Mesh(armGeo, metalMat);
+            arm.position.set(0.85, 7, 0);
+            group.add(arm);
+
+            // Luminaria
+            const lampGeo = new THREE.BoxGeometry(0.8, 0.4, 0.6);
+            const lamp = new THREE.Mesh(lampGeo, lightMat);
+            lamp.position.set(1.5, 6.7, 0);
+            group.add(lamp);
+
+            group.position.set(x, 0.8, z);
+            group.rotation.y = rotY;
+            scene.add(group);
+        }
+
+        // Farolas en intersecciones clave
+        createStreetLight(-12, 12, 0);
+        createStreetLight(12, 12, Math.PI);
+        createStreetLight(-12, -12, Math.PI / 2);
+        createStreetLight(12, -12, -Math.PI / 2);
+
+
+        // --- VEHÍCULOS (COCHES VOXEL ANIMADOS) ---
+        function createVoxelCar(color, startX, startZ, direction) {
+            const carGroup = new THREE.Group();
+            const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3 });
+            const glassMat = new THREE.MeshStandardMaterial({ color: 0x1a237e, roughness: 0.1 });
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+
+            // Chasis inferior
+            const baseGeo = new THREE.BoxGeometry(2.5, 0.8, 5.5);
+            const base = new THREE.Mesh(baseGeo, bodyMat);
+            base.position.y = 0.6;
+            base.castShadow = true;
+            carGroup.add(base);
+
+            // Cabina superior
+            const cabinGeo = new THREE.BoxGeometry(2.3, 1, 3.2);
+            const cabin = new THREE.Mesh(cabinGeo, bodyMat);
+            cabin.position.set(0, 1.4, -0.4);
+            cabin.castShadow = true;
+            carGroup.add(cabin);
+
+            // Cristal delantero
+            const windShieldGeo = new THREE.BoxGeometry(2.1, 0.7, 0.2);
+            const windShield = new THREE.Mesh(windShieldGeo, glassMat);
+            windShield.position.set(0, 1.4, 1.15);
+            carGroup.add(windShield);
+
+            // Ruedas
+            const wheelGeo = new THREE.BoxGeometry(0.6, 1.1, 1.1);
+            const wheelOffsets = [
+                { x: 1.3, z: 1.5 }, { x: -1.3, z: 1.5 },
+                { x: 1.3, z: -1.5 }, { x: -1.3, z: -1.5 }
+            ];
+            wheelOffsets.forEach(wo => {
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.position.set(wo.x, 0.55, wo.z);
+                wheel.castShadow = true;
+                carGroup.add(wheel);
+            });
+
+            // Faros delanteros luminosos
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const headlightGeo = new THREE.BoxGeometry(0.4, 0.3, 0.1);
+            const leftLight = new THREE.Mesh(headlightGeo, lightMat);
+            leftLight.position.set(0.9, 0.7, 2.76);
+            const rightLight = leftLight.clone();
+            rightLight.position.x = -0.9;
+            carGroup.add(leftLight);
+            carGroup.add(rightLight);
+
+            carGroup.position.set(startX, 0, startZ);
+            
+            // Configurar dirección y rotación
+            carGroup.userData = { 
+                direction: direction, 
+                speed: 0.3 + Math.random() * 0.2,
+                type: 'car'
+            };
+            if (direction.x > 0) carGroup.rotation.y = Math.PI / 2;
+            else if (direction.x < 0) carGroup.rotation.y = -Math.PI / 2;
+            else if (direction.z < 0) carGroup.rotation.y = Math.PI;
+
+            scene.add(carGroup);
+            animatedElements.cars.push(carGroup);
+        }
+
+        // Inicializar Coches
+        createVoxelCar(0xd32f2f, -4, 120, { x: 0, z: -1 });  // Carril izquierdo vertical norte
+        createVoxelCar(0x1976d2, 4, -120, { x: 0, z: 1 });   // Carril derecho vertical sur
+        createVoxelCar(0xfbc02d, -120, -4, { x: 1, z: 0 });  // Carril horizontal este
+        createVoxelCar(0x388e3c, 120, 4, { x: -1, z: 0 });   // Carril horizontal oeste
+
+
+        // --- PEATONES (PERSONAJES CÚBICOS ANIMADOS) ---
+        function createVoxelPedestrian(x, z, limitZMin, limitZMax) {
+            const character = new THREE.Group();
+            
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xffcc80, roughness: 0.8 }); // Piel
+            const shirtMat = new THREE.MeshStandardMaterial({ color: Math.random() > 0.5 ? 0xe91e63 : 0x00bcd4 });
+            const pantsMat = new THREE.MeshStandardMaterial({ color: 0x3f51b5 });
+
+            // Cuerpo/Torso
+            const torsoGeo = new THREE.BoxGeometry(0.8, 1.2, 0.6);
+            const torso = new THREE.Mesh(torsoGeo, shirtMat);
+            torso.position.y = 1.3;
+            torso.castShadow = true;
+            character.add(torso);
+
+            // Cabeza
+            const headGeo = new THREE.BoxGeometry(0.7, 0.7, 0.7);
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 2.15;
+            head.castShadow = true;
+            character.add(head);
+
+            // Piernas (Movimiento oscilante individual)
+            const legGeo = new THREE.BoxGeometry(0.3, 0.7, 0.3);
+            const leftLeg = new THREE.Mesh(legGeo, pantsMat);
+            leftLeg.position.set(-0.2, 0.35, 0);
+            leftLeg.castShadow = true;
+            character.add(leftLeg);
+
+            const rightLeg = new THREE.Mesh(legGeo, pantsMat);
+            rightLeg.position.set(0.2, 0.35, 0);
+            rightLeg.castShadow = true;
+            character.add(rightLeg);
+
+            character.position.set(x, 0.8, z);
+
+            character.userData = {
+                direction: Math.random() > 0.5 ? 1 : -1,
+                speed: 0.04 + Math.random() * 0.03,
+                limitMin: limitZMin,
+                limitMax: limitZMax,
+                leftLeg: leftLeg,
+                rightLeg: rightLeg,
+                timeOffset: Math.random() * 10
+            };
+
+            scene.add(character);
+            animatedElements.pedestrians.push(character);
+        }
+
+        // Distribuir peatones en aceras específicas
+        createVoxelPedestrian(-11, 25, 12, 100);
+        createVoxelPedestrian(-11, 65, 12, 100);
+        createVoxelPedestrian(11, 40, 12, 100);
+        createVoxelPedestrian(11, -40, -100, -12);
+
+
+        // --- BUCLE DE ANIMACIÓN Y RENDERIZADO ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = clock.getElapsedTime();
+
+            // 1. Actualizar Controles de Cámara (Inercia de movimiento)
+            controls.update();
+
+            // 2. Animación de Coches (Movimiento e infinito)
+            animatedElements.cars.forEach(car => {
+                car.position.x += car.userData.direction.x * car.userData.speed;
+                car.position.z += car.userData.direction.z * car.userData.speed;
+
+                // Reposicionar al salir de los límites de la ciudad para simular tráfico infinito
+                if (car.position.z < -130) car.position.z = 130;
+                if (car.position.z > 130) car.position.z = -130;
+                if (car.position.x < -130) car.position.x = 130;
+                if (car.position.x > 130) car.position.x = -130;
+            });
+
+            // 3. Animación de Peatones (Caminata y oscilación de extremidades)
+            animatedElements.pedestrians.forEach(p => {
+                p.position.z += p.userData.direction * p.userData.speed;
+                
+                // Limitar caminata por manzana y dar vuelta
+                if (p.position.z > p.userData.limitMax) {
+                    p.userData.direction = -1;
+                    p.rotation.y = Math.PI;
+                } else if (p.position.z < p.userData.limitMin) {
+                    p.userData.direction = 1;
+                    p.rotation.y = 0;
+                }
+
+                // Simular balanceo de piernas estilo voxel al caminar
+                const swing = Math.sin(time * 8 + p.userData.timeOffset) * 0.4;
+                p.userData.leftLeg.rotation.x = swing;
+                p.userData.rightLeg.rotation.x = -swing;
+            });
+
+            // 4. Movimiento lento de Nubes en el cielo
+            animatedElements.clouds.forEach(cloud => {
+                cloud.position.x += 0.03;
+                if (cloud.position.x > 180) {
+                    cloud.position.x = -180;
+                }
+            });
+
+            // Renderizar Escena
+            renderer.render(scene, camera);
+        }
+
+        // --- MANEJO DE CAMBIO DE TAMAÑO DE LA VENTANA ---
+        window.addEventListener('resize', onWindowResize, false);
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Iniciar Simulación
+        animate();
+
+    </script>
+</body>
+</html>

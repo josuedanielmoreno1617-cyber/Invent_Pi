@@ -8,7 +8,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -28,6 +27,10 @@ import com.example.ui.AddDataScreen
 import com.example.ui.AnalysisScreen
 import com.example.ui.PredictionScreen
 import com.example.ui.SettingsScreen
+import com.example.ui.HistoryScreen
+import com.example.ui.SummaryScreen
+
+import com.example.ui.InvoiceScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +38,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         val database = AppDatabase.getDatabase(this)
-        val repository = InventoryRepository(database.productDao())
+        val repository = InventoryRepository(database.productDao(), database.inventoryLogDao())
         val settingsManager = SettingsManager(this)
         val notificationHelper = NotificationHelper(this)
         val factory = InventoryViewModelFactory(repository, settingsManager, notificationHelper)
@@ -59,12 +62,15 @@ class MainActivity : ComponentActivity() {
                     val viewModel: InventoryViewModel = viewModel(factory = factory)
                     
                     NavHost(navController = navController, startDestination = "login") {
-                        composable("login") { LoginScreen(navController) }
-                        composable("home") { HomeScreen(navController) }
+                        composable("login") { LoginScreen(navController, viewModel) }
+                        composable("home") { HomeScreen(navController, viewModel) }
                         composable("add") { AddDataScreen(navController, viewModel) }
                         composable("analysis") { AnalysisScreen(navController, viewModel) }
                         composable("prediction") { PredictionScreen(navController, viewModel) }
                         composable("settings") { SettingsScreen(navController, viewModel) }
+                        composable("history") { HistoryScreen(navController, viewModel) }
+                        composable("summary") { SummaryScreen(navController, viewModel) }
+                        composable("invoices") { InvoiceScreen(navController, viewModel) }
                     }
                 }
             }

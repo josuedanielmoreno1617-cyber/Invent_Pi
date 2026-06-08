@@ -11,11 +11,11 @@ android {
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.aistudio.inventario.jkmplx"
+    applicationId = "com.aistudio.inventory.managmnt.x9a8b7"
     minSdk = 24
     targetSdk = 36
-    versionCode = 1
-    versionName = "1.0"
+    versionCode = 14
+    versionName = "14.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -88,6 +88,9 @@ dependencies {
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
   implementation(libs.androidx.navigation.compose)
+  implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+  implementation("com.patrykandpatrick.vico:compose-m3:1.15.0")
+  implementation("com.patrykandpatrick.vico:core:1.15.0")
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
   // implementation(libs.coil.compose)
