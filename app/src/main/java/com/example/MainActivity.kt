@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
                     val viewModel: InventoryViewModel = viewModel(factory = factory)
                     
                     NavHost(navController = navController, startDestination = "login") {
-                        composable("login") { LoginScreen(navController, viewModel) }
+                        composable("login") { LoginScreen(navController) }
                         composable("home") { HomeScreen(navController, viewModel) }
                         composable("add") { AddDataScreen(navController, viewModel) }
                         composable("analysis") { AnalysisScreen(navController, viewModel) }

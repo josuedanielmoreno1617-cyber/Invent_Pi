@@ -58,15 +58,9 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 
 import androidx.compose.ui.platform.LocalContext
 
-import com.example.ui.theme.getAppColors
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-
 @Composable
 fun HomeScreen(navController: NavController, viewModel: InventoryViewModel) {
     val context = LocalContext.current
-    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
-    val appColors = getAppColors(isDarkMode)
-    
     var isMenuOpen by remember { mutableStateOf(false) }
     var scannedProduct by remember { mutableStateOf<Product?>(null) }
     var showScanDialog by remember { mutableStateOf(false) }
@@ -104,9 +98,9 @@ fun HomeScreen(navController: NavController, viewModel: InventoryViewModel) {
         }
     }
 
-    val backgroundNavy = appColors.backgroundNavy
-    val textSilver = appColors.textSilver
-    val limeGreen = appColors.limeGreen
+    val backgroundNavy = Color(0xFF0A1F38).copy(alpha = 0.6f)
+    val textSilver = Color(0xFFE0E2E6)
+    val limeGreen = Color(0xFF98FB37)
     
     Box(
         modifier = Modifier
@@ -264,8 +258,12 @@ fun HomeScreen(navController: NavController, viewModel: InventoryViewModel) {
                     ) {
                         items(filteredProducts) { product ->
                             val isSelected = selectedProductIds.contains(product.id)
-                            Card(
-                                modifier = Modifier.fillMaxWidth().clickable {
+                            ProductItem(
+                                product = product,
+                                isSelected = isSelected,
+                                isSelectionMode = isSelectionMode,
+                                currencySymbol = viewModel.settingsManager.currencySymbol,
+                                onClick = {
                                     if (isSelectionMode) {
                                         selectedProductIds = if (isSelected) {
                                             selectedProductIds - product.id
@@ -275,40 +273,8 @@ fun HomeScreen(navController: NavController, viewModel: InventoryViewModel) {
                                     } else {
                                         // View / Edit logic
                                     }
-                                },
-                                colors = CardDefaults.cardColors(containerColor = if (isSelected) Color(0xFF1E4C80) else Color(0xFF112B4A)),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    if (isSelectionMode) {
-                                        androidx.compose.material3.Checkbox(
-                                            checked = isSelected,
-                                            onCheckedChange = null,
-                                            colors = androidx.compose.material3.CheckboxDefaults.colors(
-                                                checkedColor = limeGreen,
-                                                uncheckedColor = textSilver
-                                            ),
-                                            modifier = Modifier.padding(end = 8.dp)
-                                        )
-                                    }
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(text = product.name, color = textSilver, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = "Código: ${product.code}", color = textSilver.copy(alpha = 0.7f), fontSize = 12.sp)
-                                        if (product.category.isNotEmpty()) {
-                                            Text(text = "Categoría: ${product.category}", color = textSilver.copy(alpha = 0.7f), fontSize = 12.sp)
-                                        }
-                                    }
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        Text(text = "${viewModel.settingsManager.currencySymbol}${product.sellPrice}", color = limeGreen, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = "Stock: ${product.quantity}", color = textSilver, fontSize = 14.sp)
-                                    }
                                 }
-                            }
+                            )
                         }
                     }
                 }
@@ -645,7 +611,7 @@ fun HomeScreen(navController: NavController, viewModel: InventoryViewModel) {
                     HorizontalDivider(color = textSilver.copy(alpha = 0.2f))
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "AI Inventario - Versión 12.0",
+                        text = "AI Inventario - Versión 15.0",
                         color = textSilver.copy(alpha = 0.7f),
                         fontSize = 12.sp
                     )
@@ -698,6 +664,64 @@ fun DrawerItem(
                 color = tint.copy(alpha = 0.7f),
                 fontSize = 14.sp
             )
+        }
+    }
+}
+
+@Composable
+fun ProductItem(
+    product: Product,
+    isSelected: Boolean,
+    isSelectionMode: Boolean,
+    currencySymbol: String,
+    onClick: () -> Unit
+) {
+    val textSilver = Color(0xFFE0E2E6)
+    val limeGreen = Color(0xFF98FB37)
+    
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = if (isSelected) Color(0xFF1E4C80) else Color(0xFF112B4A)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (isSelectionMode) {
+                androidx.compose.material3.Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = null,
+                    colors = androidx.compose.material3.CheckboxDefaults.colors(
+                        checkedColor = limeGreen,
+                        uncheckedColor = textSilver
+                    ),
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = product.name, color = textSilver, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = "Código: ${product.code}", color = textSilver.copy(alpha = 0.7f), fontSize = 12.sp)
+                if (product.category.isNotEmpty()) {
+                    Text(text = "Categoría: ${product.category}", color = textSilver.copy(alpha = 0.7f), fontSize = 12.sp)
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                val totalProfit = (product.sellPrice - product.buyPrice) * product.quantity
+                val isProfit = totalProfit >= 0
+                val profitColor = if (isProfit) limeGreen else Color(0xFFFF4550)
+                Text(
+                    text = "Beneficio esperado: ${(if (isProfit) "+" else "")}${currencySymbol}${"%.2f".format(totalProfit).replace(",", ".")}", 
+                    color = profitColor, 
+                    fontSize = 12.sp, 
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(text = "${currencySymbol}${product.sellPrice}", color = limeGreen, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = "Stock: ${product.quantity}", color = textSilver, fontSize = 14.sp)
+            }
         }
     }
 }

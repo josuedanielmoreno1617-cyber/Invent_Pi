@@ -7,8 +7,6 @@ import com.example.data.InventoryRepository
 import com.example.data.Product
 import com.example.data.SettingsManager
 import com.example.utils.NotificationHelper
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -27,14 +25,6 @@ class InventoryViewModel(
     val settingsManager: SettingsManager,
     private val notificationHelper: NotificationHelper
 ) : ViewModel() {
-    private val _isDarkMode = MutableStateFlow(settingsManager.isDarkMode)
-    val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
-
-    fun setDarkMode(isDark: Boolean) {
-        settingsManager.isDarkMode = isDark
-        _isDarkMode.value = isDark
-    }
-
     val uiState: StateFlow<List<Product>> = repository.allProducts
         .stateIn(
             scope = viewModelScope,

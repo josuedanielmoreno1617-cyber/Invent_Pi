@@ -26,8 +26,9 @@ import com.patrykandpatrick.vico.compose.chart.line.lineChart
 import com.patrykandpatrick.vico.compose.chart.line.lineSpec
 import com.patrykandpatrick.vico.core.entry.FloatEntry
 import com.patrykandpatrick.vico.core.entry.entryModelOf
-
-import com.example.ui.theme.getAppColors
+import androidx.compose.ui.graphics.Brush
+import com.patrykandpatrick.vico.compose.component.shape.shader.fromBrush
+import com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,13 +37,11 @@ fun SummaryScreen(navController: NavController, viewModel: InventoryViewModel) {
     val expectedRevenue by viewModel.expectedRevenue.collectAsStateWithLifecycle()
     val products by viewModel.uiState.collectAsStateWithLifecycle()
     val currency = viewModel.settingsManager.currencySymbol
-    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
-    val appColors = getAppColors(isDarkMode)
 
-    val backgroundNavy = appColors.backgroundNavy
-    val cardNavy = appColors.cardNavy
-    val limeGreen = appColors.limeGreen
-    val textSilver = appColors.textSilver
+    val backgroundNavy = Color(0xFF0A1F38).copy(alpha = 0.6f)
+    val cardNavy = Color(0xFF112B4A)
+    val limeGreen = Color(0xFF98FB37)
+    val textSilver = Color(0xFFE0E2E6)
     
     val profit = expectedRevenue - totalInvestment
 
@@ -109,12 +108,19 @@ fun SummaryScreen(navController: NavController, viewModel: InventoryViewModel) {
                     if (products.isEmpty()) {
                         Text("Agrega productos para visualizar el gráfico", color = textSilver.copy(alpha = 0.7f))
                     } else {
-                        val sortedProducts = products.sortedBy { it.name }
-                        val valueEntries = sortedProducts.mapIndexed { index, product ->
-                            FloatEntry(x = index.toFloat(), y = (product.quantity * product.buyPrice).toFloat())
-                        }
-                        val profitEntries = sortedProducts.mapIndexed { index, product ->
-                            FloatEntry(x = index.toFloat(), y = (product.quantity * (product.sellPrice - product.buyPrice)).toFloat())
+                        val sortedProducts = products.sortedBy { it.dateJoined }
+                        var cumulativeInvestment = 0f
+                        var cumulativeProfit = 0f
+                        
+                        val valueEntries = mutableListOf<FloatEntry>()
+                        val profitEntries = mutableListOf<FloatEntry>()
+                        
+                        sortedProducts.forEachIndexed { index, product ->
+                            cumulativeInvestment += (product.quantity * product.buyPrice).toFloat()
+                            cumulativeProfit += (product.quantity * (product.sellPrice - product.buyPrice)).toFloat()
+                            
+                            valueEntries.add(FloatEntry(x = index.toFloat(), y = cumulativeInvestment))
+                            profitEntries.add(FloatEntry(x = index.toFloat(), y = cumulativeProfit))
                         }
                         
                         val chartModel = entryModelOf(valueEntries, profitEntries)
@@ -122,8 +128,22 @@ fun SummaryScreen(navController: NavController, viewModel: InventoryViewModel) {
                         Chart(
                             chart = lineChart(
                                 lines = listOf(
-                                    lineSpec(lineColor = textSilver), // Inversión
-                                    lineSpec(lineColor = limeGreen)   // Ganancia
+                                    lineSpec(
+                                        lineColor = textSilver,
+                                        lineBackgroundShader = DynamicShaders.fromBrush(
+                                            brush = Brush.verticalGradient(
+                                                listOf(textSilver.copy(alpha = 0.4f), Color.Transparent)
+                                            )
+                                        )
+                                    ), // Inversión Acumulada
+                                    lineSpec(
+                                        lineColor = limeGreen,
+                                        lineBackgroundShader = DynamicShaders.fromBrush(
+                                            brush = Brush.verticalGradient(
+                                                listOf(limeGreen.copy(alpha = 0.4f), Color.Transparent)
+                                            )
+                                        )
+                                    )   // Ganancia Acumulada
                                 )
                             ),
                             model = chartModel,
@@ -148,13 +168,13 @@ fun SummaryScreen(navController: NavController, viewModel: InventoryViewModel) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(modifier = Modifier.size(12.dp).background(textSilver, RoundedCornerShape(2.dp)))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Inversión", color = textSilver, fontSize = 12.sp)
+                    Text("Inversión Acumulada", color = textSilver, fontSize = 12.sp)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(modifier = Modifier.size(12.dp).background(limeGreen, RoundedCornerShape(2.dp)))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Ganancia", color = textSilver, fontSize = 12.sp)
+                    Text("Ganancia Acumulada", color = textSilver, fontSize = 12.sp)
                 }
             }
         }

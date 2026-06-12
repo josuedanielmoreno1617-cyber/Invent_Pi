@@ -22,15 +22,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 
-import com.example.ui.theme.getAppColors
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddDataScreen(navController: NavController, viewModel: InventoryViewModel) {
-    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
-    val appColors = getAppColors(isDarkMode)
-    
     var productNumber by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
@@ -68,10 +62,10 @@ fun AddDataScreen(navController: NavController, viewModel: InventoryViewModel) {
         }
     }
 
-    val backgroundNavy = appColors.backgroundNavy
-    val cardNavy = appColors.cardNavy
-    val textSilver = appColors.textSilver
-    val limeGreen = appColors.limeGreen
+    val backgroundNavy = androidx.compose.ui.graphics.Color(0xFF0A1F38).copy(alpha = 0.6f)
+    val cardNavy = androidx.compose.ui.graphics.Color(0xFF112B4A)
+    val textSilver = androidx.compose.ui.graphics.Color(0xFFE0E2E6)
+    val limeGreen = androidx.compose.ui.graphics.Color(0xFF98FB37)
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = limeGreen,

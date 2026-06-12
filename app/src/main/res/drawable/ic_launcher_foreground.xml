@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:width="66dp"
-        android:height="66dp"
-        android:drawable="@drawable/ai_inventario_logo_v2_1780432286696"
+        android:width="144dp"
+        android:height="144dp"
+        android:drawable="@drawable/ia_inventario_logo_1781066748807"
         android:gravity="center" />
 </layer-list>

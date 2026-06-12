@@ -16,21 +16,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.viewmodel.InventoryViewModel
 
-import com.example.ui.theme.getAppColors
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PredictionScreen(navController: NavController, viewModel: InventoryViewModel) {
     val mostInefficient by viewModel.mostInefficientProduct.collectAsStateWithLifecycle()
     val highestDemand by viewModel.highestDemandProduct.collectAsStateWithLifecycle()
-    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
-    val appColors = getAppColors(isDarkMode)
 
-    val backgroundNavy = appColors.backgroundNavy
-    val cardNavy = appColors.cardNavy
-    val textSilver = appColors.textSilver
-    val limeGreen = appColors.limeGreen
-    val cardNavyColor = Color(0xFF112B4A)
+    val backgroundNavy = Color(0xFF0A1F38).copy(alpha = 0.6f)
+    val cardNavy = Color(0xFF112B4A)
+    val textSilver = Color(0xFFE0E2E6)
+    val limeGreen = Color(0xFF98FB37)
 
     Scaffold(
         topBar = {

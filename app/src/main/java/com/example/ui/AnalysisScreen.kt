@@ -27,8 +27,6 @@ import androidx.navigation.NavController
 import com.example.viewmodel.InventoryViewModel
 import com.example.R
 
-import com.example.ui.theme.getAppColors
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalysisScreen(navController: NavController, viewModel: InventoryViewModel) {
@@ -37,13 +35,11 @@ fun AnalysisScreen(navController: NavController, viewModel: InventoryViewModel) 
     val highestDemand by viewModel.highestDemandProduct.collectAsStateWithLifecycle()
     val mostInefficient by viewModel.mostInefficientProduct.collectAsStateWithLifecycle()
     val currency = viewModel.settingsManager.currencySymbol
-    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
-    val appColors = getAppColors(isDarkMode)
 
-    val backgroundNavy = appColors.backgroundNavy
-    val cardNavy = appColors.cardNavy
-    val textSilver = appColors.textSilver
-    val limeGreen = appColors.limeGreen
+    val backgroundNavy = Color(0xFF0A1F38).copy(alpha = 0.6f)
+    val cardNavy = Color(0xFF112B4A)
+    val textSilver = Color(0xFFE0E2E6)
+    val limeGreen = Color(0xFF98FB37)
     val accentBlue = Color(0xFF00B4DB)
     val accentRed = Color(0xFFFF4550)
 

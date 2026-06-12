@@ -6,10 +6,6 @@ import android.content.SharedPreferences
 class SettingsManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("inventory_settings", Context.MODE_PRIVATE)
 
-    var isDarkMode: Boolean
-        get() = prefs.getBoolean("is_dark_mode", true)
-        set(value) = prefs.edit().putBoolean("is_dark_mode", value).apply()
-
     var notifyLowStock: Boolean
         get() = prefs.getBoolean("notify_low_stock", true)
         set(value) = prefs.edit().putBoolean("notify_low_stock", value).apply()

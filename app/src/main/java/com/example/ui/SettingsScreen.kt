@@ -22,33 +22,27 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.viewmodel.InventoryViewModel
 
-import com.example.ui.theme.getAppColors
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(navController: NavController, viewModel: InventoryViewModel) {
     val settingsManager = viewModel.settingsManager
 
-    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
     var notifyLowStock by remember { mutableStateOf(settingsManager.notifyLowStock) }
     var notifyPredictions by remember { mutableStateOf(settingsManager.notifyPredictions) }
     var notifyInventoryChanges by remember { mutableStateOf(settingsManager.notifyInventoryChanges) }
-
+    
     var businessData by remember { mutableStateOf(settingsManager.businessData) }
     var storeLocation by remember { mutableStateOf(settingsManager.storeLocation) }
     var notifyPriceChanges by remember { mutableStateOf(settingsManager.notifyPriceChanges) }
     var enableProductImage by remember { mutableStateOf(settingsManager.enableProductImage) }
     var currencySymbol by remember { mutableStateOf(settingsManager.currencySymbol) }
 
-    val appColors = getAppColors(isDarkMode)
-    val backgroundNavy = appColors.backgroundNavy
-    val textSilver = appColors.textSilver
-    val fieldBackground = appColors.fieldBackground
-    val textDark = appColors.textDark
-    val textGray = appColors.textGray
-    val limeGreen = appColors.limeGreen
-    val cardNavy = appColors.cardNavy
+    val backgroundNavy = Color(0xFF0A1F38).copy(alpha = 0.6f)
+    val textSilver = Color(0xFFE0E2E6)
+    val fieldBackground = Color(0xFFE0E2E6)
+    val textDark = Color(0xFF333333)
+    val textGray = Color(0xFF666666)
+    val limeGreen = Color(0xFF98FB37)
 
     Scaffold(
         topBar = {
@@ -196,16 +190,6 @@ fun SettingsScreen(navController: NavController, viewModel: InventoryViewModel) 
             // Application Settings
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(text = "Ajustes de la Aplicación", color = textSilver, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-
-                SettingSwitchRow(
-                    title = "Modo Oscuro",
-                    description = "Ajusta la apariencia visual de la aplicación.",
-                    checked = isDarkMode,
-                    textColor = textSilver,
-                    checkedTrackColor = limeGreen
-                ) {
-                    viewModel.setDarkMode(it)
-                }
                 
                 SettingSwitchRow(
                     title = "Predicción de pérdidas y ganancias",

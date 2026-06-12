@@ -21,26 +21,20 @@ import androidx.navigation.NavController
 import com.example.viewmodel.InventoryViewModel
 import kotlinx.coroutines.launch
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.ui.theme.getAppColors
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InvoiceScreen(navController: NavController, viewModel: InventoryViewModel) {
     val settingsManager = viewModel.settingsManager
-    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
-    val appColors = getAppColors(isDarkMode)
-
     var companyName by remember { mutableStateOf(settingsManager.companyName) }
     var rucNumber by remember { mutableStateOf(settingsManager.rucNumber) }
     var storeLocation by remember { mutableStateOf(settingsManager.storeLocation) }
     
-    val backgroundNavy = appColors.backgroundNavy
-    val cardNavy = appColors.cardNavy
-    val textSilver = appColors.textSilver
-    val fieldBackground = appColors.fieldBackground
-    val textDark = appColors.textDark
-    val limeGreen = appColors.limeGreen
+    val backgroundNavy = Color(0xFF0A1F38).copy(alpha = 0.6f)
+    val cardNavy = Color(0xFF112B4A)
+    val textSilver = Color(0xFFE0E2E6)
+    val fieldBackground = Color(0xFFE0E2E6)
+    val textDark = Color(0xFF333333)
+    val limeGreen = Color(0xFF98FB37)
     
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }

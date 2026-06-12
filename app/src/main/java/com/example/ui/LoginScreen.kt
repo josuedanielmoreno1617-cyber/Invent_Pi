@@ -20,25 +20,17 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.viewmodel.InventoryViewModel
-import com.example.ui.theme.getAppColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavController, viewModel: InventoryViewModel) {
+fun LoginScreen(navController: NavController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
-    val appColors = getAppColors(isDarkMode)
-
-    val backgroundNavy = appColors.backgroundNavy
-    val fieldBackground = appColors.fieldBackground
-    val textDark = appColors.textDark
-    val textGray = appColors.textGray
-    val textSilver = appColors.textSilver
-    val limeGreen = appColors.limeGreen
+    val backgroundNavy = Color(0xFF0A1F38).copy(alpha = 0.6f)
+    val fieldBackground = Color(0xFFE0E2E6)
+    val textDark = Color(0xFF333333)
+    val textGray = Color(0xFF666666)
     val astColor = Color(0xFFD32F2F)
 
     Surface(

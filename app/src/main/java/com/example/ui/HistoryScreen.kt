@@ -24,19 +24,15 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-import com.example.ui.theme.getAppColors
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(navController: NavController, viewModel: InventoryViewModel) {
     val logs by viewModel.allLogs.collectAsStateWithLifecycle()
-    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
-    val appColors = getAppColors(isDarkMode)
 
-    val backgroundNavy = appColors.backgroundNavy
-    val cardNavy = appColors.cardNavy
-    val textSilver = appColors.textSilver
-    val limeGreen = appColors.limeGreen
+    val backgroundNavy = Color(0xFF0A1F38).copy(alpha = 0.6f)
+    val cardNavy = Color(0xFF112B4A)
+    val textSilver = Color(0xFFE0E2E6)
+    val limeGreen = Color(0xFF98FB37)
     val accentBlue = Color(0xFF00B4DB)
     val accentRed = Color(0xFFFF4550)
 
