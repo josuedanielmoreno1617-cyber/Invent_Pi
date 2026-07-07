@@ -31,6 +31,8 @@ import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -54,7 +56,9 @@ import kotlinx.coroutines.launch
 import androidx.activity.compose.rememberLauncherForActivityResult
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material.icons.filled.QrCodeScanner
+import coil.compose.AsyncImage
 
 import androidx.compose.ui.platform.LocalContext
 
@@ -72,6 +76,7 @@ fun HomeScreen(navController: NavController, viewModel: InventoryViewModel) {
     var selectedProductIds by remember { mutableStateOf(setOf<Int>()) }
     var showCategoryDialog by remember { mutableStateOf(false) }
     var categoryInput by remember { mutableStateOf("") }
+    var showSupportDialog by remember { mutableStateOf(false) }
     
     var showTutorial by remember { mutableStateOf(!viewModel.settingsManager.hasSeenTutorial) }
     
@@ -345,7 +350,7 @@ fun HomeScreen(navController: NavController, viewModel: InventoryViewModel) {
                         Text("Cancelar", color = textSilver)
                     }
                 },
-                containerColor = Color(0xFF112B4A)
+                containerColor = backgroundNavy
             )
         }
 
@@ -384,7 +389,7 @@ fun HomeScreen(navController: NavController, viewModel: InventoryViewModel) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFF112B4A), RoundedCornerShape(12.dp))
+                            .background(backgroundNavy, RoundedCornerShape(12.dp))
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
@@ -451,6 +456,49 @@ fun HomeScreen(navController: NavController, viewModel: InventoryViewModel) {
                 dismissButton = {
                     TextButton(onClick = { showScanDialog = false }) {
                         Text("Cerrar", color = textSilver)
+                    }
+                },
+                containerColor = backgroundNavy
+            )
+        }
+        
+        if (showSupportDialog) {
+            AlertDialog(
+                onDismissRequest = { showSupportDialog = false },
+                title = { Text("Servicio al Cliente", color = textSilver, fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text("¿Necesitas ayuda? Contáctanos a través de nuestros canales oficiales:", color = textSilver)
+                        
+                        Button(
+                            onClick = {
+                                val url = "https://wa.me/5211234567890" // placeholder phone number
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                try { context.startActivity(intent) } catch(e: Exception) {}
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("WhatsApp", color = Color.White)
+                        }
+                        
+                        Button(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                    data = Uri.parse("mailto:soporte@app.com")
+                                }
+                                try { context.startActivity(intent) } catch(e: Exception) {}
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD44638)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Correo Electrónico", color = Color.White)
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showSupportDialog = false }) {
+                        Text("Cerrar", color = limeGreen)
                     }
                 },
                 containerColor = backgroundNavy
@@ -596,6 +644,28 @@ fun HomeScreen(navController: NavController, viewModel: InventoryViewModel) {
                     }
                     
                     DrawerItem(
+                        title = "Versión Web",
+                        description = "Acceso al panel en la nube",
+                        icon = Icons.Default.Language,
+                        tint = textSilver,
+                        iconBackground = Brush.linearGradient(listOf(Color(0xFF00C6FF), Color(0xFF0072FF)))
+                    ) {
+                        isMenuOpen = false
+                        navController.navigate("web")
+                    }
+                    
+                    DrawerItem(
+                        title = "Exportar PDF",
+                        description = "Reporte financiero detallado",
+                        icon = Icons.Default.Share,
+                        tint = textSilver,
+                        iconBackground = Brush.linearGradient(listOf(Color(0xFFFF5252), Color(0xFFD32F2F)))
+                    ) {
+                        isMenuOpen = false
+                        com.example.utils.PdfExporter.exportToPdfAndShare(context, allProducts, viewModel.settingsManager.currencySymbol)
+                    }
+                    
+                    DrawerItem(
                         title = "Configuración",
                         description = "Preferencias y notificaciones",
                         icon = Icons.Default.Settings,
@@ -606,12 +676,23 @@ fun HomeScreen(navController: NavController, viewModel: InventoryViewModel) {
                         navController.navigate("settings")
                     }
                     
+                    DrawerItem(
+                        title = "Servicio al Cliente",
+                        description = "Soporte vía WhatsApp y Correo",
+                        icon = Icons.Default.SupportAgent,
+                        tint = textSilver,
+                        iconBackground = Brush.linearGradient(listOf(Color(0xFF25D366), Color(0xFF128C7E)))
+                    ) {
+                        isMenuOpen = false
+                        showSupportDialog = true
+                    }
+                    
                     Spacer(modifier = Modifier.weight(1f))
                     
                     HorizontalDivider(color = textSilver.copy(alpha = 0.2f))
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "AI Inventario - Versión 15.0",
+                        text = "AI Inventario - Versión 17.0",
                         color = textSilver.copy(alpha = 0.7f),
                         fontSize = 12.sp
                     )
@@ -698,6 +779,27 @@ fun ProductItem(
                     ),
                     modifier = Modifier.padding(end = 8.dp)
                 )
+            }
+            if (product.imageUri != null) {
+                AsyncImage(
+                    model = product.imageUri,
+                    contentDescription = "Imagen de ${product.name}",
+                    modifier = Modifier
+                        .size(60.dp)
+                        .padding(end = 12.dp)
+                        .background(Color.DarkGray, RoundedCornerShape(8.dp)),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .padding(end = 12.dp)
+                        .background(Color.DarkGray, RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, tint = textSilver.copy(alpha = 0.5f))
+                }
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = product.name, color = textSilver, fontWeight = FontWeight.Bold, fontSize = 16.sp)

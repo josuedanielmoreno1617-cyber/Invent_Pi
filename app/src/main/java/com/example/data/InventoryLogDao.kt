@@ -15,4 +15,7 @@ interface InventoryLogDao {
     
     @Insert
     suspend fun insertLogs(logs: List<InventoryLog>)
+    
+    @Query("DELETE FROM inventory_logs")
+    suspend fun deleteAllLogs()
 }

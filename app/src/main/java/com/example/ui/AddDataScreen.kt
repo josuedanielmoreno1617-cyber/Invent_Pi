@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,9 +36,17 @@ fun AddDataScreen(navController: NavController, viewModel: InventoryViewModel) {
     var buyPrice by remember { mutableStateOf("") }
     var sellPrice by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
+    var imageUri by remember { mutableStateOf<String?>(null) }
+    var currentProductId by remember { mutableStateOf(0) }
     
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        uri?.let { imageUri = it.toString() }
+    }
 
     val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
         if (result.contents != null) {
@@ -45,6 +54,7 @@ fun AddDataScreen(navController: NavController, viewModel: InventoryViewModel) {
             scope.launch {
                 val existingProduct = viewModel.getProductByCode(result.contents)
                 if (existingProduct != null) {
+                    currentProductId = existingProduct.id
                     productNumber = existingProduct.productNumber
                     name = existingProduct.name
                     description = existingProduct.description
@@ -54,6 +64,7 @@ fun AddDataScreen(navController: NavController, viewModel: InventoryViewModel) {
                     buyPrice = existingProduct.buyPrice.toString()
                     sellPrice = existingProduct.sellPrice.toString()
                     location = existingProduct.location
+                    imageUri = existingProduct.imageUri
                     snackbarHostState.showSnackbar("Producto encontrado y cargado.")
                 } else {
                     snackbarHostState.showSnackbar("Código escaneado. Ingresa los datos del nuevo producto.")
@@ -172,6 +183,25 @@ fun AddDataScreen(navController: NavController, viewModel: InventoryViewModel) {
                             colors = textFieldColors
                         )
                     }
+                    OutlinedButton(
+                        onClick = { imagePickerLauncher.launch("image/*") },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = limeGreen)
+                    ) {
+                        Text(if (imageUri != null) "Cambiar Imagen" else "Seleccionar Imagen", style = MaterialTheme.typography.titleSmall)
+                    }
+                    if (imageUri != null) {
+                        AsyncImage(
+                            model = imageUri,
+                            contentDescription = "Imagen seleccionada",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp)
+                                .background(androidx.compose.ui.graphics.Color.DarkGray, androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
                             value = unitsPerBox, onValueChange = { unitsPerBox = it },
@@ -230,6 +260,7 @@ fun AddDataScreen(navController: NavController, viewModel: InventoryViewModel) {
                     } else {
                         viewModel.addProduct(
                             Product(
+                                id = currentProductId,
                                 productNumber = productNumber,
                                 code = code,
                                 name = name,
@@ -240,11 +271,13 @@ fun AddDataScreen(navController: NavController, viewModel: InventoryViewModel) {
                                 buyPrice = bPrice,
                                 sellPrice = sPrice,
                                 dateJoined = System.currentTimeMillis(),
-                                location = location
+                                location = location,
+                                imageUri = imageUri
                             )
                         )
                         scope.launch {
                             snackbarHostState.showSnackbar("Producto guardado correctamente")
+                            currentProductId = 0
                             productNumber = ""
                             code = ""
                             name = ""
@@ -255,6 +288,7 @@ fun AddDataScreen(navController: NavController, viewModel: InventoryViewModel) {
                             buyPrice = ""
                             sellPrice = ""
                             location = ""
+                            imageUri = null
                             navController.navigateUp()
                         }
                     }

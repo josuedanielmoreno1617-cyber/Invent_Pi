@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -52,6 +53,18 @@ fun SummaryScreen(navController: NavController, viewModel: InventoryViewModel) {
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = textSilver)
+                    }
+                },
+                actions = {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    IconButton(onClick = {
+                        com.example.utils.PdfExporter.exportToPdfAndShare(context, products, currency)
+                    }) {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Default.Share,
+                            contentDescription = "Compartir Reporte PDF",
+                            tint = limeGreen
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -176,6 +189,35 @@ fun SummaryScreen(navController: NavController, viewModel: InventoryViewModel) {
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Ganancia Acumulada", color = textSilver, fontSize = 12.sp)
                 }
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            val context = androidx.compose.ui.platform.LocalContext.current
+            Button(
+                onClick = {
+                    com.example.utils.PdfExporter.exportToPdfAndShare(context, products, currency)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = limeGreen,
+                    contentColor = Color(0xFF0A1F38)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.Share,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Exportar Reporte PDF",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
             }
         }
     }

@@ -31,6 +31,7 @@ import com.example.ui.HistoryScreen
 import com.example.ui.SummaryScreen
 
 import com.example.ui.InvoiceScreen
+import com.example.ui.WebScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,6 +72,7 @@ class MainActivity : ComponentActivity() {
                         composable("history") { HistoryScreen(navController, viewModel) }
                         composable("summary") { SummaryScreen(navController, viewModel) }
                         composable("invoices") { InvoiceScreen(navController, viewModel) }
+                        composable("web") { WebScreen(navController, viewModel) }
                     }
                 }
             }

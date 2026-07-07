@@ -14,8 +14,8 @@ android {
     applicationId = "com.aistudio.inventory.managmnt.x9a8b7"
     minSdk = 24
     targetSdk = 36
-    versionCode = 16
-    versionName = "16.0"
+    versionCode = 17
+    versionName = "17.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -93,7 +93,7 @@ dependencies {
   implementation("com.patrykandpatrick.vico:core:1.15.0")
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
-  // implementation(libs.coil.compose)
+  implementation(libs.coil.compose)
   implementation(libs.converter.moshi)
   // implementation(libs.firebase.ai)
   implementation(libs.kotlinx.coroutines.android)

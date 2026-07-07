@@ -70,16 +70,17 @@ fun SettingsScreen(navController: NavController, viewModel: InventoryViewModel) 
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            val componentBackground = Color(0xFF0A1F38).copy(alpha = 0.6f)
             val textFieldColors = TextFieldDefaults.colors(
-                focusedContainerColor = fieldBackground,
-                unfocusedContainerColor = fieldBackground,
+                focusedContainerColor = componentBackground,
+                unfocusedContainerColor = componentBackground,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
-                cursorColor = textDark,
-                focusedTextColor = textDark,
-                unfocusedTextColor = textDark,
-                focusedLabelColor = textGray,
-                unfocusedLabelColor = textGray
+                cursorColor = textSilver,
+                focusedTextColor = textSilver,
+                unfocusedTextColor = textSilver,
+                focusedLabelColor = textSilver.copy(alpha = 0.7f),
+                unfocusedLabelColor = textSilver.copy(alpha = 0.7f)
             )
 
             // Business Data
@@ -126,10 +127,10 @@ fun SettingsScreen(navController: NavController, viewModel: InventoryViewModel) 
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                         },
                         colors = ExposedDropdownMenuDefaults.textFieldColors(
-                            focusedContainerColor = fieldBackground,
-                            unfocusedContainerColor = fieldBackground,
-                            focusedTextColor = textDark,
-                            unfocusedTextColor = textDark,
+                            focusedContainerColor = componentBackground,
+                            unfocusedContainerColor = componentBackground,
+                            focusedTextColor = textSilver,
+                            unfocusedTextColor = textSilver,
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         ),
@@ -139,11 +140,11 @@ fun SettingsScreen(navController: NavController, viewModel: InventoryViewModel) 
                     ExposedDropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false },
-                        modifier = Modifier.background(fieldBackground)
+                        modifier = Modifier.background(componentBackground)
                     ) {
                         currencies.forEach { selectionOption ->
                             DropdownMenuItem(
-                                text = { Text(selectionOption, color = textDark) },
+                                text = { Text(selectionOption, color = textSilver) },
                                 onClick = {
                                     currencySymbol = selectionOption
                                     settingsManager.currencySymbol = selectionOption
@@ -171,6 +172,26 @@ fun SettingsScreen(navController: NavController, viewModel: InventoryViewModel) 
                 ) { 
                     notifyLowStock = it 
                     settingsManager.notifyLowStock = it 
+                }
+                
+                if (notifyLowStock) {
+                    var lowStockThresholdStr by remember { mutableStateOf(settingsManager.lowStockThreshold.toString()) }
+                    TextField(
+                        value = lowStockThresholdStr,
+                        onValueChange = { 
+                            lowStockThresholdStr = it
+                            it.toIntOrNull()?.let { threshold ->
+                                settingsManager.lowStockThreshold = threshold
+                            }
+                        },
+                        label = { Text("Umbral de stock bajo") },
+                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = textFieldColors,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                        )
+                    )
                 }
 
                 SettingSwitchRow(
@@ -257,6 +278,28 @@ fun SettingsScreen(navController: NavController, viewModel: InventoryViewModel) 
                     }
                 )
 
+                val backupLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.CreateDocument("application/json"),
+                    onResult = { uri ->
+                        if (uri != null) {
+                            viewModel.backupData(context, uri) { success, message ->
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                )
+
+                val restoreLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.OpenDocument(),
+                    onResult = { uri ->
+                        if (uri != null) {
+                            viewModel.restoreData(context, uri) { success, message ->
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                )
+
                 Button(
                     onClick = {
                         csvExportLauncher.launch("inventario_backup.csv")
@@ -281,9 +324,7 @@ fun SettingsScreen(navController: NavController, viewModel: InventoryViewModel) 
                 
                 Button(
                     onClick = {
-                        viewModel.backupData(context) { success, message ->
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                        }
+                        backupLauncher.launch("inventario_backup.json")
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = limeGreen, contentColor = backgroundNavy),
@@ -294,12 +335,10 @@ fun SettingsScreen(navController: NavController, viewModel: InventoryViewModel) 
 
                 Button(
                     onClick = {
-                        viewModel.restoreData(context) { success, message ->
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                        }
+                        restoreLauncher.launch(arrayOf("application/json"))
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = fieldBackground, contentColor = textDark),
+                    colors = ButtonDefaults.buttonColors(containerColor = componentBackground, contentColor = textSilver),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Restaurar Copia de Seguridad", fontWeight = FontWeight.Bold)

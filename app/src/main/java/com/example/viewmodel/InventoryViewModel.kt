@@ -66,6 +66,7 @@ class InventoryViewModel(
 
     fun addProduct(product: Product) {
         viewModelScope.launch {
+            val previousProduct = repository.getProductByCode(product.code)
             repository.insert(product)
             repository.insertLog(com.example.data.InventoryLog(
                 productId = product.id,
@@ -80,14 +81,18 @@ class InventoryViewModel(
             if (settingsManager.notifyInventoryChanges) {
                 notificationHelper.showNotification(
                     "Inventario Actualizado",
-                    "Se agregó el producto: ${product.name}"
+                    "Se agregó o modificó el producto: ${product.name}"
                 )
             }
             
-            if (settingsManager.notifyLowStock && product.quantity < 10) { // arbitrary threshold
+            val threshold = settingsManager.lowStockThreshold
+            val wasAbove = previousProduct?.quantity?.let { it >= threshold } ?: true
+            val isBelow = product.quantity < threshold
+
+            if (settingsManager.notifyLowStock && wasAbove && isBelow) {
                 notificationHelper.showNotification(
                     "Alerta de Stock Bajo",
-                    "El producto ${product.name} tiene un stock bajo (${product.quantity} unidades)."
+                    "El producto ${product.name} ha caído por debajo del umbral mínimo (${product.quantity} unidades)."
                 )
             }
         }
@@ -132,11 +137,15 @@ class InventoryViewModel(
         return repository.getProductByCode(code)
     }
 
-    fun backupData(context: Context, onResult: (Boolean, String) -> Unit) {
+    fun backupData(context: Context, uri: android.net.Uri, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
             try {
                 val products = repository.allProducts.first()
-                val jsonArray = JSONArray()
+                val logs = repository.allLogs.first()
+                
+                val rootObject = JSONObject()
+                
+                val productsArray = JSONArray()
                 products.forEach { product ->
                     val obj = JSONObject().apply {
                         put("productNumber", product.productNumber)
@@ -149,13 +158,34 @@ class InventoryViewModel(
                         put("buyPrice", product.buyPrice)
                         put("sellPrice", product.sellPrice)
                         put("dateJoined", product.dateJoined)
+                        put("category", product.category)
                         put("location", product.location)
+                        put("imageUri", product.imageUri)
                     }
-                    jsonArray.put(obj)
+                    productsArray.put(obj)
                 }
                 
-                val backupFile = File(context.filesDir, "inventory_backup.json")
-                backupFile.writeText(jsonArray.toString())
+                val logsArray = JSONArray()
+                logs.forEach { log ->
+                    val obj = JSONObject().apply {
+                        put("productId", log.productId)
+                        put("productCode", log.productCode)
+                        put("productName", log.productName)
+                        put("type", log.type)
+                        put("quantityChange", log.quantityChange)
+                        put("timestamp", log.timestamp)
+                        put("details", log.details)
+                    }
+                    logsArray.put(obj)
+                }
+                
+                rootObject.put("products", productsArray)
+                rootObject.put("logs", logsArray)
+                
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(rootObject.toString().toByteArray())
+                } ?: throw Exception("No se pudo abrir el archivo")
+                
                 onResult(true, "Copia de seguridad guardada con éxito.")
             } catch (e: Exception) {
                 onResult(false, "Error al crear la copia de seguridad: ${e.message}")
@@ -163,22 +193,22 @@ class InventoryViewModel(
         }
     }
 
-    fun restoreData(context: Context, onResult: (Boolean, String) -> Unit) {
+    fun restoreData(context: Context, uri: android.net.Uri, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
             try {
-                val backupFile = File(context.filesDir, "inventory_backup.json")
-                if (!backupFile.exists()) {
-                    onResult(false, "No se encontró ninguna copia de seguridad local.")
-                    return@launch
-                }
+                val jsonString = context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    inputStream.bufferedReader().readText()
+                } ?: throw Exception("No se pudo leer el archivo")
                 
-                val jsonString = backupFile.readText()
-                val jsonArray = JSONArray(jsonString)
+                val rootObject = JSONObject(jsonString)
+                val productsArray = rootObject.optJSONArray("products") ?: JSONArray()
+                val logsArray = rootObject.optJSONArray("logs") ?: JSONArray()
                 
                 repository.deleteAll()
+                repository.deleteAllLogs()
                 
-                for (i in 0 until jsonArray.length()) {
-                    val obj = jsonArray.getJSONObject(i)
+                for (i in 0 until productsArray.length()) {
+                    val obj = productsArray.getJSONObject(i)
                     val product = Product(
                         productNumber = obj.optString("productNumber", ""),
                         code = obj.optString("code", ""),
@@ -190,13 +220,34 @@ class InventoryViewModel(
                         buyPrice = obj.optDouble("buyPrice", 0.0),
                         sellPrice = obj.optDouble("sellPrice", 0.0),
                         dateJoined = obj.optLong("dateJoined", 0L),
-                        location = obj.optString("location", "")
+                        category = obj.optString("category", ""),
+                        location = obj.optString("location", ""),
+                        imageUri = if (obj.has("imageUri") && !obj.isNull("imageUri")) obj.optString("imageUri") else null
                     )
                     repository.insert(product)
                 }
+                
+                val logsList = mutableListOf<com.example.data.InventoryLog>()
+                for (i in 0 until logsArray.length()) {
+                    val obj = logsArray.getJSONObject(i)
+                    val log = com.example.data.InventoryLog(
+                        productId = obj.optInt("productId", 0),
+                        productCode = obj.optString("productCode", ""),
+                        productName = obj.optString("productName", ""),
+                        type = obj.optString("type", ""),
+                        quantityChange = obj.optInt("quantityChange", 0),
+                        timestamp = obj.optLong("timestamp", 0L),
+                        details = obj.optString("details", "")
+                    )
+                    logsList.add(log)
+                }
+                if (logsList.isNotEmpty()) {
+                    repository.insertLogs(logsList)
+                }
+                
                 onResult(true, "Datos restaurados con éxito.")
             } catch (e: Exception) {
-                onResult(false, "Error al restaurar los datos: ${e.message}")
+                onResult(false, "Error al restaurar los datos: Asegúrate de que el archivo es válido.")
             }
         }
     }

@@ -6,6 +6,10 @@ import android.content.SharedPreferences
 class SettingsManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("inventory_settings", Context.MODE_PRIVATE)
 
+    var lowStockThreshold: Int
+        get() = prefs.getInt("low_stock_threshold", 10)
+        set(value) = prefs.edit().putInt("low_stock_threshold", value).apply()
+
     var notifyLowStock: Boolean
         get() = prefs.getBoolean("notify_low_stock", true)
         set(value) = prefs.edit().putBoolean("notify_low_stock", value).apply()

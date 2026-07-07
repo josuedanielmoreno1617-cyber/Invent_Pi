@@ -19,6 +19,8 @@ class InventoryRepository(
 
     suspend fun deleteAll() = productDao.deleteAllProducts()
     
+    suspend fun deleteAllLogs() = inventoryLogDao.deleteAllLogs()
+    
     suspend fun insertLog(log: InventoryLog) = inventoryLogDao.insertLog(log)
     
     suspend fun insertLogs(logs: List<InventoryLog>) = inventoryLogDao.insertLogs(logs)

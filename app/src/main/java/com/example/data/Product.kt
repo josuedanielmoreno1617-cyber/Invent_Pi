@@ -17,5 +17,6 @@ data class Product(
     val sellPrice: Double,
     val dateJoined: Long,
     val location: String,
-    val category: String = ""
+    val category: String = "",
+    val imageUri: String? = null
 )
